@@ -895,27 +895,28 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 			filePath += ".ktx";
 			if (LoadTexture(filePath, tex, view))
 			{
-				if (tex.viewType == VK_IMAGE_VIEW_TYPE_CUBE)
-				{
-					textures3D.push_back(tex);
-					textureViews3D.push_back(view);
-				}
-				else if (tex.viewType == VK_IMAGE_VIEW_TYPE_2D)
-				{
-					textures2D.push_back(tex);
-					textureViews2D.push_back(view);
-				}
+				textures2D.push_back(tex);
+				textureViews2D.push_back(view);
 			}
 		}
 	}
 
-	// Descriptor Set Allocate Information
-	VkDescriptorSetAllocateInfo descriptor_set_allocate_info = {};
-	descriptor_set_allocate_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	descriptor_set_allocate_info.pNext = nullptr;
-	descriptor_set_allocate_info.descriptorPool = descriptorPool;
-	descriptor_set_allocate_info.descriptorSetCount = 1;
-	descriptor_set_allocate_info.pSetLayouts = &descriptorSetLayout;
+	for (const auto& material : currentLevel.materials3D)
+	{
+		if (!material.map_Kd.empty())
+		{
+			ktxVulkanTexture tex = {};
+			VkImageView view = nullptr;
+			std::string filePath = "../textures/";
+			filePath += material.map_Kd.substr(0, material.map_Kd.size() - 4);
+			filePath += ".ktx";
+			if (LoadTexture(filePath, tex, view))
+			{
+				textures3D.push_back(tex);
+				textureViews3D.push_back(view);
+			}
+		}
+	}
 
 	std::vector<VkDescriptorImageInfo> image_info_2D;
 	for (size_t i = 0; i < textureViews2D.size(); i++)
@@ -982,11 +983,7 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 	}
 
 
-	VkDescriptorImageInfo texture3D = default3DImage;
-	if (image_info_3D.size())
-	{
-		texture3D = image_info_3D[0];
-	}
+	VkDescriptorImageInfo texture3D = (image_info_3D.size()) ? image_info_3D[0] : default3DImage;
 
 	for (size_t i = 0; i < maxNumFrames; i++)
 	{

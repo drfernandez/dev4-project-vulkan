@@ -184,19 +184,32 @@ bool LEVELDATA::LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& inst
 		for (const auto& material : p.materials)
 		{
 			H2B::MATERIAL2 mat = H2B::MATERIAL2(material);
-			auto iter = uniqueMaterials2D.find(mat.name);
-			if (iter == uniqueMaterials2D.end())
+			if (mat.name.compare("Skybox_Texture") == 0)
 			{
-				unsigned int index = uniqueMaterials2D.size();
-				uniqueMaterials2D[mat.name] = index;
-				materials2D.push_back(mat);
+				auto iter = uniqueMaterials3D.find(mat.name);
+				if (iter == uniqueMaterials3D.end())
+				{
+					unsigned int index = uniqueMaterials3D.size();
+					uniqueMaterials3D[mat.name] = index;
+					materials3D.push_back(mat);
+				}
+			}
+			else
+			{
+				auto iter = uniqueMaterials2D.find(mat.name);
+				if (iter == uniqueMaterials2D.end())
+				{
+					unsigned int index = uniqueMaterials2D.size();
+					uniqueMaterials2D[mat.name] = index;
+					materials2D.push_back(mat);
+				}
 			}
 		}
 		for (const auto& mesh : p.meshes)
 		{
 			H2B::MESH2 m = H2B::MESH2(mesh);
 			m.drawInfo.indexOffset += numIndices;
-			m.materialIndex = FindMaterialIndex(p.materials[m.materialIndex]);
+			m.materialIndex = Find2DMaterialIndex(p.materials[m.materialIndex]);
 			m.hasColorTexture = (!materials2D[m.materialIndex].map_Kd.empty()) ? 1 : 0;
 			instancedMesh.subMeshes.push_back(m);
 		}
@@ -221,11 +234,22 @@ bool LEVELDATA::LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& inst
 	return success;
 }
 
-unsigned int LEVELDATA::FindMaterialIndex(const H2B::MATERIAL2& material)
+unsigned int LEVELDATA::Find2DMaterialIndex(const H2B::MATERIAL2& material)
 {
 	unsigned int v = 0;
 	auto iter = uniqueMaterials2D.find(material.name);
 	if (iter != uniqueMaterials2D.end())
+	{
+		v = iter->second;
+	}
+	return v;
+}
+
+unsigned int LEVELDATA::Find3DMaterialIndex(const H2B::MATERIAL2& material)
+{
+	unsigned int v = 0;
+	auto iter = uniqueMaterials3D.find(material.name);
+	if (iter != uniqueMaterials3D.end())
 	{
 		v = iter->second;
 	}
@@ -321,9 +345,11 @@ void LEVELDATA::Clear()
 	vertices.clear();
 	indices.clear();
 	materials2D.clear();
-	uniqueSkyboxes.clear();
+	materials3D.clear();
 	uniqueMeshes.clear();
+	uniqueSkyboxes.clear();
 	uniqueMaterials2D.clear();
+	uniqueMaterials3D.clear();
 	uniqueLights.clear();
 	world_camera = GW::MATH::GIdentityMatrixF;
 }

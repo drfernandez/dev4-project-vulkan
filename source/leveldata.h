@@ -118,7 +118,8 @@ private:
 	std::string GetFileName(std::string file);
 	GW::MATH::GMATRIXF ReadMatrixData();
 	bool LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& instancedMesh);
-	unsigned int FindMaterialIndex(const H2B::MATERIAL2& material);
+	unsigned int Find2DMaterialIndex(const H2B::MATERIAL2& material);
+	unsigned int Find3DMaterialIndex(const H2B::MATERIAL2& material);
 	void LoadMeshFromFile();
 	void LoadLightFromFile();
 	void LoadCameraFromFile();
@@ -133,9 +134,11 @@ public:
 	std::vector<H2B::VERTEX> vertices; 
 	std::vector<unsigned int> indices;
 	std::vector<H2B::MATERIAL2> materials2D;
-	std::map<std::string, H2B::INSTANCED_MESH> uniqueSkyboxes;
+	std::vector<H2B::MATERIAL2> materials3D;
 	std::map<std::string, H2B::INSTANCED_MESH> uniqueMeshes;
+	std::map<std::string, H2B::INSTANCED_MESH> uniqueSkyboxes;
 	std::map<std::string, unsigned int> uniqueMaterials2D;
+	std::map<std::string, unsigned int> uniqueMaterials3D;
 	std::vector<H2B::LIGHT> uniqueLights;
 	GW::MATH::GMATRIXF world_camera;
 
