@@ -4,8 +4,6 @@
 
 #include <vulkan\vulkan.h>
 
-#pragma warning(pop)
-
 #define VK_DESTROY_BUFFER(d, p) { if(d && p) { vkDestroyBuffer(d, p, nullptr); p = nullptr; }}
 #define VK_FREE_MEMORY(d, p) { if(d && p) { vkFreeMemory(d, p, nullptr); p = nullptr; }}
 #define VK_DESTROY_DESCRIPTOR_SET_LAYOUT(d, p) { if(d && p) { vkDestroyDescriptorSetLayout(d, p, nullptr); p = nullptr; }}
@@ -15,6 +13,8 @@
 #define VK_DESTROY_PIPELINE_LAYOUT(d, p) { if(d && p) { vkDestroyPipelineLayout(d, p, nullptr); p = nullptr; }}
 #define VK_DESTROY_SAMPLER(d, p) {if(d && p) { vkDestroySampler(d, p, nullptr); p = nullptr;}}
 #define VK_DESTROY_IMAGE_VIEW(d, p) { if(d && p) { vkDestroyImageView(d, p, nullptr); p = nullptr; }}
+
+#define KTX_DESTROY_TEXTURE(d, p) { if(d) { ktxVulkanTexture_Destruct(&p, d, nullptr); }}
 
 struct CVkPipelineShaderStageCreateInfo : public VkPipelineShaderStageCreateInfo
 {
@@ -371,3 +371,5 @@ struct CVkDescriptorSetLayoutBinding : public VkDescriptorSetLayoutBinding
 		this->stageFlags = flags;
 	}
 };
+
+#pragma warning(pop)

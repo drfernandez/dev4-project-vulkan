@@ -13,12 +13,10 @@
 #include "VkHelper.h"
 #include "leveldata.h"
 
-#define KTX_DESTROY_TEXTURE(d, p) { if(d) { ktxVulkanTexture_Destruct(&p, d, nullptr); }}
 
 #define MAX_MESH_PER_DRAW 1024
 #define MAX_LIGHT_PER_DRAW 1024
-#define MAX_TEXTURES 1000
-
+#define MAX_TEXTURES 1024
 #define NEAR_PLANE 0.1f
 #define FAR_PLANE 1000.0f
 
@@ -30,6 +28,8 @@ struct SHADER_DATA
 	GW::MATH::GMATRIXF matricies[MAX_MESH_PER_DRAW];
 	H2B::ATTRIBUTES materials[MAX_MESH_PER_DRAW];
 	H2B::LIGHT lights[MAX_LIGHT_PER_DRAW];
+
+	SHADER_DATA() = default;
 };
 
 struct RENDER_INSTANCE_DATA
@@ -88,11 +88,13 @@ private:
 	VkDescriptorPool descriptorPool = nullptr;
 
 	VkSampler textureSampler = nullptr;
-	std::vector<ktxVulkanTexture> textures;
-	std::vector<VkImageView> textureViews;
+	std::vector<ktxVulkanTexture> textures2D;
+	std::vector<VkImageView> textureViews2D;
+	std::vector<ktxVulkanTexture> textures3D;
+	std::vector<VkImageView> textureViews3D;
 	ktxVulkanTexture default2DTexture;
-	ktxVulkanTexture default3DTexture;
 	VkImageView defaultTexture2DView;
+	ktxVulkanTexture default3DTexture;
 	VkImageView defaultTexture3DView;
 
 	SHADER_DATA* modelData = nullptr;
@@ -149,40 +151,28 @@ Renderer::Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	vlk.GetDevice((void**)&device);
 	vlk.GetPhysicalDevice((void**)&physicalDevice);
 
-	+eventResponder.Create([=](const GW::GEvent& e) {
+	+eventResponder.Create([=](const GW::GEvent& e)
+	{
 		GW::INPUT::GBufferedInput::Events q;
 		GW::INPUT::GBufferedInput::EVENT_DATA qd;
-		if (+e.Read(q, qd) && (q == GW::INPUT::GBufferedInput::Events::KEYRELEASED && qd.data == G_KEY_1))
+		bool bReadIsGood = +e.Read(q, qd);
+		bool bBufferedInputKey1 = (q == GW::INPUT::GBufferedInput::Events::KEYRELEASED && qd.data == G_KEY_1);
+		if (bReadIsGood && bBufferedInputKey1 && !dialogBoxOpen)
 		{
-			if (!dialogBoxOpen)
+			dialogBoxOpen = true;
+			std::string levelName = std::string("");
+			if (OpenFileDialogBox(uwh, levelName))
 			{
-				dialogBoxOpen = true;
-				if (dialogBoxOpen)
-				{
-					std::string levelName = "";
-					if (OpenFileDialogBox(uwh, levelName))
-					{
-						vkDeviceWaitIdle(device);
-						LoadDataFromLevel(physicalDevice, levelName);
-					}
-					dialogBoxOpen = false;
-				}
+				vkDeviceWaitIdle(device);
+				LoadDataFromLevel(physicalDevice, levelName);
 			}
+			dialogBoxOpen = false;
 		}
-		});
+	});
 	+bufferedInput.Register(eventResponder);
 
 	modelData = new SHADER_DATA();
 
-	for (size_t i = 0; i < MAX_MESH_PER_DRAW; i++)
-	{
-		modelData->matricies[i] = GW::MATH::GIdentityMatrixF;
-		modelData->materials[i] = H2B::ATTRIBUTES();
-	}
-	for (size_t i = 0; i < MAX_LIGHT_PER_DRAW; i++)
-	{
-		modelData->lights[i] = H2B::LIGHT();
-	}
 	for (size_t i = 0; i < maxNumFrames; ++i)
 	{
 		CreateVulkanBuffer(physicalDevice, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
@@ -190,15 +180,8 @@ Renderer::Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 			storageBufferHandle[i], storageBufferData[i]);
 	}
 
-	if (LoadTexture("../textures/default2dtexture.ktx", default2DTexture, defaultTexture2DView))
-	{
-		int debug = 0;
-	}
-
-	if (LoadTexture("../textures/default3dtexture.ktx", default3DTexture, defaultTexture3DView))
-	{
-		int debug = 0;
-	}
+	bool bTexture2D = LoadTexture("../textures/default2dtexture.ktx", default2DTexture, defaultTexture2DView);
+	bool bTexture3D = LoadTexture("../textures/default3dtexture.ktx", default3DTexture, defaultTexture3DView);
 
 	/***************** SHADER INTIALIZATION ******************/
 	// Intialize runtime shader compiler HLSL -> SPIRV
@@ -671,6 +654,8 @@ void Renderer::CleanUp()
 		modelData = nullptr;
 	}
 
+	size_t size = -1;
+
 	// Release allocated buffers, shaders & pipeline
 	VK_DESTROY_BUFFER(device, vertexHandle);
 	VK_FREE_MEMORY(device, vertexData);
@@ -678,7 +663,7 @@ void Renderer::CleanUp()
 	VK_DESTROY_BUFFER(device, indexHandle);
 	VK_FREE_MEMORY(device, indexData);
 
-	size_t size = storageBufferHandle.size();
+	size = storageBufferHandle.size();
 	for (size_t i = 0; i < size; i++)
 	{
 		VK_DESTROY_BUFFER(device, storageBufferHandle[i]);
@@ -703,11 +688,17 @@ void Renderer::CleanUp()
 
 	VK_DESTROY_SAMPLER(device, textureSampler);
 
-	size = textures.size();
+	size = textures2D.size();
 	for (size_t i = 0; i < size; i++)
 	{
-		VK_DESTROY_IMAGE_VIEW(device, textureViews[i]);
-		KTX_DESTROY_TEXTURE(device, textures[i]);
+		VK_DESTROY_IMAGE_VIEW(device, textureViews2D[i]);
+		KTX_DESTROY_TEXTURE(device, textures2D[i]);
+	}
+	size = textures3D.size();
+	for (size_t i = 0; i < size; i++)
+	{
+		VK_DESTROY_IMAGE_VIEW(device, textureViews3D[i]);
+		KTX_DESTROY_TEXTURE(device, textures3D[i]);
 	}
 
 	VK_DESTROY_IMAGE_VIEW(device, defaultTexture2DView);
@@ -799,25 +790,36 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 	unsigned int maxNumFrames = 0;
 	vlk.GetSwapchainImageCount(maxNumFrames);
 
+	size_t size = -1;
 	// Release allocated buffers
 	VK_DESTROY_BUFFER(device, vertexHandle);
 	VK_FREE_MEMORY(device, vertexData);
-
 	VK_DESTROY_BUFFER(device, indexHandle);
 	VK_FREE_MEMORY(device, indexData);
 
-	for (size_t i = 0; i < textures.size(); i++)
+	size = textures2D.size();
+	for (size_t i = 0; i <size; i++)
 	{
-		KTX_DESTROY_TEXTURE(device, textures[i]);
-		VK_DESTROY_IMAGE_VIEW(device, textureViews[i]);
+		KTX_DESTROY_TEXTURE(device, textures2D[i]);
+		VK_DESTROY_IMAGE_VIEW(device, textureViews2D[i]);
 	}
-	textures.clear();
-	textureViews.clear();
+	size = textures3D.size();
+	for (size_t i = 0; i < size; i++)
+	{
+		KTX_DESTROY_TEXTURE(device, textures3D[i]);
+		VK_DESTROY_IMAGE_VIEW(device, textureViews3D[i]);
+	}
+
+	textures2D.clear();
+	textureViews2D.clear();
+	textures3D.clear();
+	textureViews3D.clear();
 
 	currentLevel.Clear();
 
 	if (!currentLevel.LoadLevel(levelFilePath.c_str()))
 	{
+		std::cout << "Level failed to load!" << std::endl;
 		return false;
 	}
 	// Transfer vertex data to the vertex buffer. (staging would be prefered here)
@@ -826,6 +828,7 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 			currentLevel.vertices.data(), sizeof(H2B::VERTEX) * currentLevel.vertices.size(),
 			vertexHandle, vertexData))
 	{
+		std::cout << "Vertex Buffer failed to create!" << std::endl;
 		return false;
 	}
 	// Transfer index data to the index buffer. (staging would be prefered here)
@@ -834,6 +837,7 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 			currentLevel.indices.data(), sizeof(unsigned int) * currentLevel.indices.size(),
 			indexHandle, indexData))
 	{
+		std::cout << "Index Buffer failed to create!" << std::endl;
 		return false;
 	}
 
@@ -891,8 +895,16 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 			filePath += ".ktx";
 			if (LoadTexture(filePath, tex, view))
 			{
-				textures.push_back(tex);
-				textureViews.push_back(view);
+				if (tex.viewType == VK_IMAGE_VIEW_TYPE_CUBE)
+				{
+					textures3D.push_back(tex);
+					textureViews3D.push_back(view);
+				}
+				else if (tex.viewType == VK_IMAGE_VIEW_TYPE_2D)
+				{
+					textures2D.push_back(tex);
+					textureViews2D.push_back(view);
+				}
 			}
 		}
 	}
@@ -905,14 +917,24 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 	descriptor_set_allocate_info.descriptorSetCount = 1;
 	descriptor_set_allocate_info.pSetLayouts = &descriptorSetLayout;
 
-	std::vector<VkDescriptorImageInfo> image_info;
-	for (size_t i = 0; i < textureViews.size(); i++)
+	std::vector<VkDescriptorImageInfo> image_info_2D;
+	for (size_t i = 0; i < textureViews2D.size(); i++)
 	{
 		VkDescriptorImageInfo info = {};
-		info.imageView = textureViews[i];
-		info.imageLayout = textures[i].imageLayout;
+		info.imageView = textureViews2D[i];
+		info.imageLayout = textures2D[i].imageLayout;
 		info.sampler = textureSampler;
-		image_info.push_back(info);
+		image_info_2D.push_back(info);
+	}
+
+	std::vector<VkDescriptorImageInfo> image_info_3D;
+	for (size_t i = 0; i < textureViews3D.size(); i++)
+	{
+		VkDescriptorImageInfo info = {};
+		info.imageView = textureViews3D[i];
+		info.imageLayout = textures3D[i].imageLayout;
+		info.sampler = textureSampler;
+		image_info_3D.push_back(info);
 	}
 
 	VkDescriptorImageInfo default2DImage = {};
@@ -959,20 +981,11 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 		vkUpdateDescriptorSets(device, MAX_TEXTURES, write_descriptor_set_binding_2, 0, nullptr);
 	}
 
-	uint32_t index2D = 0;
-	std::vector<VkDescriptorImageInfo> texture2D;
+
 	VkDescriptorImageInfo texture3D = default3DImage;
-	for (size_t j = 0; j < image_info.size(); j++)
+	if (image_info_3D.size())
 	{
-		bool isTexture3D = (textures[j].layerCount > 1) ? true : false;
-		if (isTexture3D)
-		{
-			texture3D = image_info[j];
-		}
-		else
-		{
-			texture2D.push_back(image_info[j]);
-		}
+		texture3D = image_info_3D[0];
 	}
 
 	for (size_t i = 0; i < maxNumFrames; i++)
@@ -982,12 +995,12 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 		vkUpdateDescriptorSets(device, 1, &write_descriptor_set_binding_1, 0, nullptr);
 
 
-		for (size_t j = 0; j < texture2D.size(); j++)
+		for (size_t j = 0; j < image_info_2D.size(); j++)
 		{
 			write_descriptor_set_binding_2[j].dstSet = descriptorSet[i];
-			write_descriptor_set_binding_2[j].pImageInfo = &texture2D[j];
+			write_descriptor_set_binding_2[j].pImageInfo = &image_info_2D[j];
 		}
-		vkUpdateDescriptorSets(device, texture2D.size(), write_descriptor_set_binding_2, 0, nullptr);
+		vkUpdateDescriptorSets(device, image_info_2D.size(), write_descriptor_set_binding_2, 0, nullptr);
 	}
 
 	return true;
