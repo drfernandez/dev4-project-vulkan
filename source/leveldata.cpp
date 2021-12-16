@@ -206,14 +206,24 @@ bool LEVELDATA::LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& inst
 			}
 		}
 
+		bool hasMaterial2D = (!materials2D.empty()) ? true : false;
+		bool hasMaterial3D = (!materials3D.empty()) ? true : false;
 		for (const auto& mesh : p.meshes)
 		{
 			H2B::MESH2 m = H2B::MESH2(mesh);
 			m.drawInfo.indexOffset += numIndices;
-			m.materialIndex = m.materialIndex;
-			m.hasColorTexture = 1;
-			m.materialIndex = Find2DMaterialIndex(p.materials[m.materialIndex]);
-			m.hasColorTexture = (!materials2D[m.materialIndex].map_Kd.empty()) ? 1 : 0;
+			bool IsCubeMap = (strcmp(p.materials[m.materialIndex].name, "Skybox_Texture") == 0);
+			bool hasTexture = false;
+			m.materialIndex = (!IsCubeMap) ? Find2DMaterialIndex(p.materials[m.materialIndex]) : Find3DMaterialIndex(p.materials[m.materialIndex]);
+			if (hasMaterial2D)
+			{
+				hasTexture = (!materials2D[m.materialIndex].map_Kd.empty()) ? true : false;
+			}
+			if (hasMaterial3D)
+			{
+				hasTexture = (!materials3D[m.materialIndex].map_Kd.empty()) ? true : false;
+			}
+			m.hasColorTexture = (hasTexture) ? 1 : 0;
 			instancedMesh.subMeshes.push_back(m);
 		}
 
