@@ -205,10 +205,13 @@ bool LEVELDATA::LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& inst
 				}
 			}
 		}
+
 		for (const auto& mesh : p.meshes)
 		{
 			H2B::MESH2 m = H2B::MESH2(mesh);
 			m.drawInfo.indexOffset += numIndices;
+			m.materialIndex = m.materialIndex;
+			m.hasColorTexture = 1;
 			m.materialIndex = Find2DMaterialIndex(p.materials[m.materialIndex]);
 			m.hasColorTexture = (!materials2D[m.materialIndex].map_Kd.empty()) ? 1 : 0;
 			instancedMesh.subMeshes.push_back(m);
