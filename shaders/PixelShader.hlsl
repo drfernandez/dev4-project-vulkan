@@ -127,6 +127,23 @@ float4 CalculateSpecular(ATTRIBUTES mat, LIGHT light, SURFACE surface, float3 ca
     return spec;
 };
 
+float4 CalculateLight(ATTRIBUTES mat, LIGHT light, SURFACE surface)
+{
+    float4 luminance = float4(0, 0, 0, 0);
+    switch (int(light.position.w))
+    {
+        case 1: // point light
+            luminance += CalculatePointLight(mat, light, surface);
+            break;
+        case 2: // spot light
+            luminance += CalculateSpotLight(mat, light, surface);
+            break;
+        default:
+            break;
+    }
+    return luminance;
+};
+
 float4 main(PS_IN input) : SV_TARGET
 {
 	ATTRIBUTES material = SceneData[0].materials[material_ID];
@@ -151,19 +168,8 @@ float4 main(PS_IN input) : SV_TARGET
     for (int i = 0; i < count; i++)
     {
         LIGHT light = SceneData[0].lights[i];
-        switch (int(light.position.w))
-        {
-            case 1: // point light
-                luminance += CalculatePointLight(material, light, surface);
-                specular += CalculateSpecular(material, light, surface, cameraPos);
-                break;
-            case 2: // spot light
-                luminance += CalculateSpotLight(material, light, surface);
-                specular += CalculateSpecular(material, light, surface, cameraPos);
-                break;
-            default:
-                break;
-        }
+        luminance += CalculateLight(material, light, surface);
+        specular += CalculateSpecular(material, light, surface, cameraPos);
     }	
     float4 diffuse = (hasColorTexture == 1) ? colorTexture[material_ID].Sample(colorTextureFilter, input.uv.xy) : float4(material.Kd, material.d);
     float4 ambient = saturate(float4(/*SceneData[0].ambient.xyz + */material.Ka.xyz, 0.0f));
