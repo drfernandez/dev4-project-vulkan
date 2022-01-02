@@ -628,6 +628,7 @@ void Renderer::Render()
 				submesh.materialIndex,
 				submesh.hasColorTexture
 			};
+
 			vkCmdPushConstants(commandBuffer, meshPipelineLayout,
 				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(RENDER_INSTANCE_DATA),
