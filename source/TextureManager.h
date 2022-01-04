@@ -8,11 +8,11 @@
 class TextureManager
 {
 public:
-	inline TextureManager* GetInstance() { static TextureManager instance; return &instance; }
+	inline static TextureManager* GetInstance() { static TextureManager instance; return &instance; }
 	void Initialize();
 	void Shutdown();
-	unsigned int GetIDTexture2D(const H2B::MATERIAL2& mat);
-	unsigned int GetIDTexture3D(const H2B::MATERIAL2& mat);
+	unsigned int GetTextureID_2D(const H2B::MATERIAL2& mat);
+	unsigned int GetTextureID_3D(const H2B::MATERIAL2& mat);
 
 private:
 	TextureManager();

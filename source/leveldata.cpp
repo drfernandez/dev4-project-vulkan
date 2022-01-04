@@ -97,11 +97,14 @@ GW::MATH::GMATRIXF LEVELDATA::ReadMatrixData()
 LEVELDATA::LEVELDATA()
 {
 	this->Clear();
+	this->texturemanager = TextureManager::GetInstance();
+	this->texturemanager->Initialize();
 }
 
 LEVELDATA::~LEVELDATA()
 {
-	Clear();
+	this->Clear();
+	this->texturemanager->Shutdown();
 }
 
 bool LEVELDATA::LoadLevel(const std::string& filePath)
@@ -184,17 +187,7 @@ bool LEVELDATA::LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& inst
 		for (const auto& material : p.materials)
 		{
 			H2B::MATERIAL2 mat = H2B::MATERIAL2(material);
-			if (mat.name.compare("Skybox_Texture") == 0)
-			{
-				auto iter = uniqueMaterials3D.find(mat.name);
-				if (iter == uniqueMaterials3D.end())
-				{
-					unsigned int index = uniqueMaterials3D.size();
-					uniqueMaterials3D[mat.name] = index;
-					materials3D.push_back(mat);
-				}
-			}
-			else
+			if (mat.name.compare("Skybox_Texture") != 0)
 			{
 				auto iter = uniqueMaterials2D.find(mat.name);
 				if (iter == uniqueMaterials2D.end())
@@ -203,6 +196,20 @@ bool LEVELDATA::LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& inst
 					uniqueMaterials2D[mat.name] = index;
 					materials2D.push_back(mat);
 				}
+
+				int id = texturemanager->GetTextureID_2D(mat);
+			}
+			else
+			{
+				auto iter = uniqueMaterials3D.find(mat.name);
+				if (iter == uniqueMaterials3D.end())
+				{
+					unsigned int index = uniqueMaterials3D.size();
+					uniqueMaterials3D[mat.name] = index;
+					materials3D.push_back(mat);
+				}
+
+				int id = texturemanager->GetTextureID_3D(mat);
 			}
 		}
 
@@ -211,10 +218,12 @@ bool LEVELDATA::LoadH2B(const std::string h2bFilePath, H2B::INSTANCED_MESH& inst
 		for (const auto& mesh : p.meshes)
 		{
 			H2B::MESH2 m = H2B::MESH2(mesh);
+
 			m.drawInfo.indexOffset += numIndices;
 			bool IsCubeMap = (strcmp(p.materials[m.materialIndex].name, "Skybox_Texture") == 0);
 			bool hasTexture = false;
 			m.materialIndex = (!IsCubeMap) ? Find2DMaterialIndex(p.materials[m.materialIndex]) : Find3DMaterialIndex(p.materials[m.materialIndex]);
+			//int materialIndex = (!IsCubeMap) ? texturemanager->GetTextureID_2D(p.materials[m.materialIndex]) : texturemanager->GetTextureID_3D(p.materials[m.materialIndex]);
 			if (hasMaterial2D)
 			{
 				hasTexture = (!materials2D[m.materialIndex].map_Kd.empty()) ? true : false;

@@ -44,7 +44,7 @@ void TextureManager::Shutdown()
 	Clear();
 }
 
-unsigned int TextureManager::GetIDTexture2D(const H2B::MATERIAL2& mat)
+unsigned int TextureManager::GetTextureID_2D(const H2B::MATERIAL2& mat)
 {
 	unsigned int index = -1;
 	auto iterator = texture_2d.find(mat.name);
@@ -61,7 +61,7 @@ unsigned int TextureManager::GetIDTexture2D(const H2B::MATERIAL2& mat)
 	return index;
 }
 
-unsigned int TextureManager::GetIDTexture3D(const H2B::MATERIAL2& mat)
+unsigned int TextureManager::GetTextureID_3D(const H2B::MATERIAL2& mat)
 {
 	unsigned int index = -1;
 	auto iterator = texture_3d.find(mat.name);
