@@ -20,9 +20,12 @@ if (WIN32)
 		source/main.cpp
 		source/renderer.h
 		source/h2bParser.h
+		source/structures.h
 		source/chronotimer.h
 		source/leveldata.h
 		source/leveldata.cpp
+		source/texturemanager.h
+		source/texturemanager.cpp
 	)
 	# add vertex shader (.hlsl) files here
 	set(VERTEX_SHADERS

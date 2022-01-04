@@ -493,18 +493,11 @@ Renderer::Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	// Skybox pipeline / descriptor set
 	{
 		// TODO: set depth testing to equal
-		depth_stencil_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
+		//depth_stencil_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
 
 		// Create Stage Info for Vertex Shader
-		stage_create_info[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		stage_create_info[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		stage_create_info[0].module = vertexShaderSkybox;
-		stage_create_info[0].pName = "main";
-		// Create Stage Info for Fragment Shader
-		stage_create_info[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		stage_create_info[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		stage_create_info[1].module = pixelShaderSkybox;
-		stage_create_info[1].pName = "main";
+		stage_create_info[0] = CVkPipelineShaderStageCreateInfo("main", vertexShaderSkybox, VK_SHADER_STAGE_VERTEX_BIT);
+		stage_create_info[1] = CVkPipelineShaderStageCreateInfo("main", pixelShaderSkybox, VK_SHADER_STAGE_FRAGMENT_BIT);
 
 		depth_stencil_create_info.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
 		pipeline_create_info.pDepthStencilState = &depth_stencil_create_info;
