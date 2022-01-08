@@ -1047,7 +1047,7 @@ void Renderer::UpdateCamera(float deltaTime)
 		matrixProxy.TranslateLocalF(worldCamera, translation, worldCamera);
 	}
 
-	float thumb_speed = G_PI * deltaTime * 0.05f;
+	float thumb_speed = G_PI_F * deltaTime * 0.05f;
 	float aspect_ratio = 0.0f;
 	unsigned int screen_width = 0;
 	unsigned int screen_height = 0;
@@ -1073,19 +1073,19 @@ void Renderer::UpdateCamera(float deltaTime)
 	float ctr_aim_x_change = 0.0f;
 	float ctr_aim_y_change = 0.0f;
 
-	bool aim_left_right_changed =
-		(G_PASS(controllerProxy.GetState(0, G_RY_AXIS, ctr_aim_y_change)) && ctr_aim_y_change);
 	bool aim_up_down_changed =
+		(G_PASS(controllerProxy.GetState(0, G_RY_AXIS, ctr_aim_y_change)) && ctr_aim_y_change);
+	bool aim_left_right_changed =
 		(G_PASS(controllerProxy.GetState(0, G_RX_AXIS, ctr_aim_x_change)) && ctr_aim_x_change);
 
-	if (mouse_moved || aim_left_right_changed)
+	if (mouse_moved || aim_up_down_changed)
 	{
 		float total_pitch = G_DEGREE_TO_RADIAN(65.0f) * mouse_y_delta / screen_height + ctr_aim_y_change * thumb_speed;
 		GW::MATH::GMATRIXF x_rotation = GW::MATH::GIdentityMatrixF;
 		matrixProxy.RotateXLocalF(x_rotation, total_pitch, x_rotation);
 		matrixProxy.MultiplyMatrixF(x_rotation, worldCamera, worldCamera);
 	}
-	if (mouse_moved || aim_up_down_changed)
+	if (mouse_moved || aim_left_right_changed)
 	{
 		float total_yaw = G_DEGREE_TO_RADIAN(65.0f) * aspect_ratio * mouse_x_delta / screen_width + ctr_aim_x_change * thumb_speed;
 		GW::MATH::GMATRIXF y_rotation = GW::MATH::GIdentityMatrixF;

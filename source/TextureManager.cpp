@@ -20,6 +20,7 @@ TextureManager& TextureManager::operator=(const TextureManager& c)
 {
 	if (this != &c)
 	{
+		this->Clear();
 		this->material_2d.resize(c.material_2d.size());
 		this->material_3d.resize(c.material_3d.size());
 		memcpy_s(this->material_2d.data(), 
