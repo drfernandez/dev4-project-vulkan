@@ -1096,10 +1096,8 @@ void Renderer::UpdateCamera(float deltaTime)
 	}
 	matrixProxy.InverseF(worldCamera, modelData->view);
 
-	float aspectRatio = 1.0f;
-	GW::GReturn gr = vlk.GetAspectRatio(aspectRatio);
-	gr = matrixProxy.ProjectionVulkanLHF(G2D_DEGREE_TO_RADIAN(65),
-		aspectRatio, NEAR_PLANE, FAR_PLANE,
+	matrixProxy.ProjectionVulkanLHF(G2D_DEGREE_TO_RADIAN(65),
+		aspect_ratio, NEAR_PLANE, FAR_PLANE,
 		modelData->projection);
 }
 
