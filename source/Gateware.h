@@ -62577,10 +62577,10 @@ namespace GW
 					if (all_device_features.tessellationShader)	device_features.tessellationShader = VK_TRUE;
 					if (all_device_features.geometryShader)		device_features.geometryShader = VK_TRUE;
 					if (all_device_features.fillModeNonSolid)	device_features.fillModeNonSolid = VK_TRUE;
-					if (m_MSAAOn) {
+					//if (m_MSAAOn) {
 						if (all_device_features.samplerAnisotropy)	device_features.samplerAnisotropy = VK_TRUE; //MSAA
 						if (all_device_features.sampleRateShading)	device_features.sampleRateShading = VK_TRUE; //MSAA
-					}
+					//}
 				}
 
 				///////////////////////////////////

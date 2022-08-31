@@ -53,12 +53,13 @@ int main()
 			"VK_LAYER_KHRONOS_validation", // standard validation layer
 			//"VK_LAYER_LUNARG_standard_validation", // add if not on MacOS
 			"VK_LAYER_RENDERDOC_Capture", // add this if you have installed RenderDoc
-			"VK_LAYER_LUNARG_monitor", // add an FPS counter
-
+			//"VK_LAYER_LUNARG_monitor", // add an FPS counter
 		};
 		if (+vulkan.Create(win, GW::GRAPHICS::DEPTH_BUFFER_SUPPORT | GW::GRAPHICS::MSAA_8X_SUPPORT | GW::GRAPHICS::TRIPLE_BUFFER/**/,
 			sizeof(debugLayers) / sizeof(debugLayers[0]),
-			debugLayers, 0, nullptr, 0, nullptr, false))
+			debugLayers, 
+			0, nullptr, 
+			0, nullptr, false))
 #else
 		if (+vulkan.Create(win, GW::GRAPHICS::DEPTH_BUFFER_SUPPORT | GW::GRAPHICS::MSAA_8X_SUPPORT | GW::GRAPHICS::TRIPLE_BUFFER))
 #endif

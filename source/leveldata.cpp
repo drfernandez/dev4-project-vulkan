@@ -170,10 +170,10 @@ bool LEVELDATA::LoadLevel(const std::string& filePath)
 
 		input.close();
 	}
-	if (input.is_open())
-	{
-		input.close();
-	}
+	//if (input.is_open())
+	//{
+	//	input.close();
+	//}
 
 	return true;
 }

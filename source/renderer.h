@@ -152,23 +152,23 @@ Renderer::Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 	vlk.GetPhysicalDevice((void**)&physicalDevice);
 
 	+eventResponder.Create([=](const GW::GEvent& e)
-	{
-		GW::INPUT::GBufferedInput::Events q;
-		GW::INPUT::GBufferedInput::EVENT_DATA qd;
-		bool bReadIsGood = +e.Read(q, qd);
-		bool bBufferedInputKey1 = (q == GW::INPUT::GBufferedInput::Events::KEYRELEASED && qd.data == G_KEY_1);
-		if (bReadIsGood && bBufferedInputKey1 && !dialogBoxOpen)
 		{
-			dialogBoxOpen = true;
-			std::string levelName = std::string("");
-			if (OpenFileDialogBox(uwh, levelName))
+			GW::INPUT::GBufferedInput::Events q;
+			GW::INPUT::GBufferedInput::EVENT_DATA qd;
+			bool bReadIsGood = +e.Read(q, qd);
+			bool bBufferedInputKey1 = (q == GW::INPUT::GBufferedInput::Events::KEYRELEASED && qd.data == G_KEY_1);
+			if (bReadIsGood && bBufferedInputKey1 && !dialogBoxOpen)
 			{
-				vkDeviceWaitIdle(device);
-				LoadDataFromLevel(physicalDevice, levelName);
+				dialogBoxOpen = true;
+				std::string levelName = std::string("");
+				if (OpenFileDialogBox(uwh, levelName))
+				{
+					vkDeviceWaitIdle(device);
+					LoadDataFromLevel(physicalDevice, levelName);
+				}
+				dialogBoxOpen = false;
 			}
-			dialogBoxOpen = false;
-		}
-	});
+		});
 	+bufferedInput.Register(eventResponder);
 
 	modelData = new SHADER_DATA();
@@ -253,9 +253,8 @@ Renderer::Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 			ARRAYSIZE(vertex_attribute_description), vertex_attribute_description);
 	// Viewport State (we still need to set this up even though we will overwrite the values)
 	CVkViewport viewport =
-		CVkViewport(0, 0,
-			static_cast<float>(width), static_cast<float>(height),
-			0, 1);
+		CVkViewport(0, 0, static_cast<float>(width), static_cast<float>(height), 0, 1);
+	
 	// Vulkan Scissor rect
 	CVkRect2D scissor =
 		CVkRect2D(
@@ -349,10 +348,12 @@ Renderer::Renderer(GW::SYSTEM::GWindow _win, GW::GRAPHICS::GVulkanSurface _vlk)
 
 	// create the the image view and sampler
 	CVkSamplerCreateInfo samplerInfo(
-		VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,
 		VK_FILTER_LINEAR,
 		10
 	);
+	samplerInfo.maxAnisotropy = 4;
+	samplerInfo.anisotropyEnable = true;
 	VkResult vr = vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler);
 
 	// Descriptor Pool Size
@@ -792,7 +793,7 @@ bool Renderer::LoadDataFromLevel(const VkPhysicalDevice& physicalDevice, const s
 	VK_FREE_MEMORY(device, indexData);
 
 	size = textures2D.size();
-	for (size_t i = 0; i <size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		KTX_DESTROY_TEXTURE(device, textures2D[i]);
 		VK_DESTROY_IMAGE_VIEW(device, textureViews2D[i]);
